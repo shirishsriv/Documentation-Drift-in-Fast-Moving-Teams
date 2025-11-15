@@ -124,7 +124,7 @@ st.title("🤖 DocumentDrifter — Auto README Generator")
 st.write("Generate a fresh README.md from any GitHub repository using Gemini.")
 
 # API key input
-st.subheader("🔐 Please enter Your Gemini API Key(this is critical)")
+st.subheader("🔐 Please enter your Gemini API Key(this is critical)")
 api_key = st.text_input(
     "Gemini API Key",
     type="password",
