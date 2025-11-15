@@ -1,177 +1,204 @@
 # 🤖 DocumentDrifter — Auto README Generator
 
-DocumentDrifter is a Streamlit-based application that automatically generates high-quality `README.md` files for any public GitHub repository.
-It analyzes repository structure and source code using **Google Gemini**, then produces polished documentation including features, architecture, and usage details.
+DocumentDrifter is a Streamlit-powered application that automatically generates polished, production-ready `README.md` files for any **public GitHub repository**.
+It analyzes repository structure and source code using **Google Gemini** and produces documentation including architecture, modules, features, folder structures, and more.
 
 ---
 
-## ⭐ Features
+## ✨ Key Features
 
-* **🔍 GitHub Repository Parsing**
-  Clones any public GitHub repository and scans all non-binary source files.
+### 🔍 Intelligent Repository Scanning
 
-* **🤖 AI-Generated Documentation**
-  Uses **Gemini 2.5 Flash** to infer project purpose, architecture, and components.
+* Clones a public GitHub repository into a temporary workspace
+* Recursively scans all readable text-based source files
+* Automatically ignores binary and irrelevant file types:
+  `.png`, `.jpg`, `.jpeg`, `.pdf`, `.gif`, `.ico`, `.zip`, `.exe`, `.bin`, `.jar`, etc.
 
-* **📂 Smart File Filtering**
-  Skips binary and irrelevant files to focus on source code.
+### 🤖 AI-Generated Documentation
 
-* **🧠 Structured Output**
-  Automatically produced README includes:
+* Uses **Gemini 2.5 Flash** (`models/gemini-2.5-flash`)
+* Summarizes repository contents into a detailed `README.md`
+* Identifies code structure, API components, modules, and potential architecture
+* Produces consistent, clean Markdown output
 
-  * Title
-  * Description
-  * Features
-  * Architecture Overview
-  * Folder Structure
-  * Installation Steps
-  * Usage Instructions
-  * API / Module Documentation
-  * Contributing
-  * Future Enhancements
+### 🚀 Streamlined User Experience
 
-* **💾 Downloadable Output**
-  View and download the generated README directly in the UI.
+* Simple Streamlit UI
+* Password-style API key entry
+* GitHub URL input
+* Spinners for cloning, scanning, and generation steps
+* In-browser README preview
+* One-click download button
 
 ---
 
-## 🏗️ Architecture Overview
+## 🏗️ Application Architecture
 
 ```
-Streamlit UI ─┐
-               │
-User Input ----┼--> Repo Cloning → File Scanning → AI Prompt Construction → Gemini → README Output
-               │
-Gemini API ----┘
+╭───────────────────────────────────────────────────────────────╮
+│                           Streamlit UI                        │
+│  ┌──────────────────────────────────────────────────────────┐  │
+│  │ • API key input                                           │ │
+│  │ • GitHub repo URL input                                   │ │
+│  │ • Generate README button                                  │ │
+│  └──────────────────────────────────────────────────────────┘  │
+╰───────────────────────────────────────────────────────────────╯
+
+                │ User Trigger
+                ▼
+
+      ┌───────────────────────┐
+      │  clone_repo()         │
+      │  - git clone into tmp │
+      └───────────────────────┘
+
+                ▼
+
+      ┌────────────────────────────┐
+      │  read_repo_files()         │
+      │  - walk directory tree     │
+      │  - ignore hidden/binary    │
+      │  - load readable content   │
+      └────────────────────────────┘
+
+                ▼
+
+      ┌──────────────────────────────┐
+      │ generate_readme()            │
+      │ - snapshot → JSON            │
+      │ - Gemini prompt              │
+      │ - returns README.md text     │
+      └──────────────────────────────┘
+
+                ▼
+
+      ┌────────────────────────────┐
+      │ Streamlit Output           │
+      │ • Markdown preview         │
+      │ • Download button          │
+      └────────────────────────────┘
 ```
 
 ---
 
-## 📁 Folder Structure
+## 📁 Repository Structure
 
 ```
 .
-├── app.py              # Main Streamlit app
-├── README.md           # (Generated via the tool)
-└── requirements.txt    # Streamlit + Gemini dependencies (recommended)
+├── app.py               # Main Streamlit application
+├── db.py                # (New) database or storage utilities (*open file for full integration*)
+├── README.md            # Auto-generated documentation (this file)
+└── requirements.txt     # Recommended dependencies (Streamlit, Gemini SDK)
 ```
 
 ---
 
-## 🚀 Installation
+## ⚙️ Installation
 
 1. **Clone this repository**
 
-   ```
-   git clone https://github.com/your/repo.git
-   cd repo
+   ```bash
+   git clone https://github.com/shirishsriv/Documentation-Drift-in-Fast-Moving-Teams
+   cd Documentation-Drift-in-Fast-Moving-Teams
    ```
 
-2. **Create a virtual environment (optional but recommended)**
+2. **(Optional) Create a virtual environment**
 
-   ```
+   ```bash
    python3 -m venv venv
    source venv/bin/activate
    ```
 
 3. **Install dependencies**
 
-   ```
+   ```bash
    pip install -r requirements.txt
    ```
 
-4. **Add your Gemini API key**
-   You will be prompted for it in the UI.
-
 ---
 
-## ▶️ Usage
+## ▶️ Running the App
 
-Run the Streamlit app:
+Launch Streamlit:
 
-```
+```bash
 streamlit run app.py
 ```
 
 Then:
 
 1. Enter your **Gemini API Key**
-2. Paste a **public GitHub repository URL**
+2. Paste a **GitHub repository URL**
 3. Click **Generate README**
-4. View or download your new README.md
+4. View or download your generated README.md
 
 ---
 
-## 🧠 How It Works
+## 🧠 How It Works Internally
 
-### 1. **Repository Cloning**
+### `clone_repo(url)`
 
-`clone_repo()` uses `git clone` in a temporary directory.
+* Clones a GitHub repository to a secure temporary directory
+* Displays error in UI if cloning fails
 
-### 2. **Directory Scanning**
+### `read_repo_files(path)`
 
-`read_repo_files()`:
+* Recursively walks repository
+* Skips hidden files and binary extensions
+* Reads up to **20,000 characters** per file
+* Returns `{ relative_path: content }` dictionary snapshot
 
-* Walks the directory tree
-* Skips hidden files/folders
-* Ignores binary extensions (`.png`, `.zip`, `.jar`, etc.)
-* Reads text files up to 20,000 characters each
+### `generate_readme(snapshot, api_key)`
 
-### 3. **README Generation**
-
-`generate_readme()`:
-
-* Formats repo snapshot as JSON
-* Sends structured prompt to **Gemini 2.5 Flash**
-* Receives Markdown README content
-
-### 4. **Streamlit UI**
-
-Provides:
-
-* API key input
-* Repo URL input
-* Progress spinners
-* Final README display
-* Download button
+* Converts snapshot to JSON
+* Builds structured prompt with documentation requirements
+* Uses Gemini to generate full Markdown README
+* Returns cleaned Markdown text
 
 ---
 
 ## 🧩 Modules Summary
 
-| Module              | Purpose                                              |
-| ------------------- | ---------------------------------------------------- |
-| `clone_repo()`      | Clones GitHub repo into a temp directory             |
-| `read_repo_files()` | Recursively scans repo and loads readable text files |
-| `generate_readme()` | Sends code snapshot to Gemini and retrieves a README |
-| Streamlit UI        | Handles user inputs and displays results             |
+| Module                | Purpose                                                            |
+| --------------------- | ------------------------------------------------------------------ |
+| **app.py**            | Main application, UI logic, repo scanning, Gemini integration      |
+| **clone_repo()**      | Clones GitHub repo to a temporary directory                        |
+| **read_repo_files()** | Loads repository contents while filtering                          |
+| **generate_readme()** | Constructs prompt + generates README from Gemini                   |
+| **db.py**             | *(Not fully analyzed — open file to include accurate description)* |
 
 ---
 
 ## 🤝 Contributing
 
 Contributions are welcome!
+You can improve documentation, add features, optimize scanning, or enhance AI prompt structure.
 
-* Open an issue
-* Submit a pull request
-* Report bugs or suggest improvements
+1. Fork the repo
+2. Create a branch
+3. Commit your changes
+4. Submit a pull request
 
 ---
 
-## 🔮 Future Enhancements
+## 🔮 Future Roadmap
 
-* Support for **private GitHub repositories**
-* Multi-README generation per folder/module
-* Better security for API key handling
-* Side-by-side diff with existing README
-* Integrating additional LLMs (OpenAI, Claude, Llama)
+* Support for **private repositories**
+* README diffs vs existing file
+* Multi-file documentation generation
+* Integration with OpenAI, Claude, Llama models
+* Rich previews + architecture diagrams
+* Improved security for API key handling
+* Repo insights dashboard
 
 ---
 
 ## 📄 License
 
-MIT License (or specify the actual license used).
+MIT License
+Feel free to use, modify, and distribute.
 
 ---
 
 Happy documenting! 🚀
+DocumentDrifter saves developers from documentation drift — one repo at a time.
